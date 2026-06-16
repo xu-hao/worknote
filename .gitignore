@@ -1,0 +1,5 @@
+# worknote keeps no runtime state in the repo — notes, stamps, and the
+# per-session counter all live under ~/.claude/worknote/. Just editor/OS cruft:
+.DS_Store
+*.swp
+*~
