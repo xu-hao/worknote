@@ -1,41 +1,48 @@
 # worknote
 
-A live, two-level "what am I working on" status line for [Claude Code](https://code.claude.com), summarized by Haiku.
+A live, two-level "what am I working on" display for [Claude Code](https://code.claude.com) and [Codex](https://developers.openai.com/codex/).
 
-It keeps a per-session note pinned to the bottom of Claude Code, so after a long turn (or a coffee break) you can glance down and instantly re-anchor on what you're doing:
+The two summary lines answer different questions:
 
-```
-🎯 Build a per-session status-line summarizer for Claude Code
-📌 Adding the worktree segment to the metadata row and refreshing the README
+- **🎯 Big picture — *why you're here.*** The overarching goal stays stable across many turns and changes only when the session moves to a genuinely different objective.
+- **📌 Detail — *what you're doing right now.*** The specific step or latest outcome changes as the conversation moves.
+
+## What it looks like
+
+Claude Code renders Worknote directly in its status area, followed by local metadata:
+
+```text
+🎯 Build a per-session status-line summarizer
+📌 Adding the worktree segment and refreshing the README
 🌿 feat/worktree-seg  ·  🌳 worktree-seg  ·  21% ctx
 ```
 
-Each line answers a different question:
+Codex keeps its native footer inside the pane. Worknote appends two rows below the existing tmux status row:
 
-- **🎯 Big picture — *why you're here.*** The session's overarching goal, the thing that stays true across many turns (`Build a per-session status-line summarizer`). It moves slowly — only when your focus shifts to a genuinely different objective — so it's the anchor you glance at to remember what you're ultimately doing.
-- **📌 Detail — *what you're doing right now.*** The specific step in front of you (`Adding the worktree segment…`), rewritten as the conversation moves. This is the line that changes turn to turn.
-- **🌿 Metadata — *where you are.*** Your current git branch, the `🌳` worktree when you're inside one (hidden in the main checkout), and how full the context window is.
+```text
+0:codex*                                      "dev" 14:32
+🎯 Port Worknote to Codex
+📌 Adding deterministic hook and tmux lifecycle tests.
+```
 
-## How it works
+## Claude Code
 
-The status line script does two jobs on each render:
+### How it works
 
-1. **Display** — reads this session's note file and draws the three lines, word-wrapped to your terminal width.
-2. **Refresh (event-driven)** — *only when the transcript has gained a new user/assistant message* since the last refresh, it detaches a cheap [Haiku](https://docs.claude.com/en/docs/about-claude/models) call to regenerate the note in the background. If the recent window is too thin to tell what you're doing, the model replies `NEED_MORE` and the generator re-runs with a larger slice of the transcript (escalating 14 → 40 → 120 messages), so the summary can reach back for context only when it actually needs to.
+The status-line script does two jobs on each render:
 
-Design properties:
+1. **Display** — reads this session's note file and draws the three lines, word-wrapped to the terminal width.
+2. **Refresh** — only when the transcript gains a new user or assistant message, it detaches a cheap [Haiku](https://docs.claude.com/en/docs/about-claude/models) call to regenerate the note. If the recent window is too thin, the generator retries with 14, 40, then 120 messages.
 
-- **Per-session** — the note is keyed by `session_id` (`~/.claude/worknote/notes/<id>.md`), so several Claude Code sessions running at once never share or clobber each other's note.
-- **No timers** — regeneration triggers on a *new message*, not a clock. Idle redraws and tool activity cost **zero** tokens.
-- **Non-blocking** — the Haiku call runs detached, so it never delays your turn.
-- **Two cadences, one stable, one live** — the big-picture line is held steady; the detail line tracks recent activity.
+Notes are keyed by `session_id` under `~/.claude/worknote/notes/`. There are no timers, idle redraws cost no tokens, and summary generation never delays the turn.
 
-## Requirements
+### Requirements
 
-- Claude Code, with the `claude` CLI on your `PATH` (the note is generated via `claude -p --model haiku`).
-- `jq`, plus standard Unix tools (`git`, `sed`, `fold`, `find`). Works on Linux and macOS (bash 3.2+).
+- Claude Code, with the `claude` CLI on `PATH`.
+- `jq` and standard Unix tools (`git`, `sed`, `fold`, `find`).
+- Linux or macOS with Bash 3.2 or newer.
 
-## Install
+### Install
 
 ```sh
 git clone https://github.com/xu-hao/worknote.git
@@ -43,30 +50,91 @@ cd worknote
 ./install.sh
 ```
 
-`install.sh` copies the scripts to `~/.claude/worknote/` and adds a `statusLine` entry to `~/.claude/settings.json` (merging into your existing settings, not replacing them). The status line appears on your next interaction with Claude Code.
+`install.sh` copies the scripts to `~/.claude/worknote/` and merges a `statusLine` entry into `~/.claude/settings.json`. The status line appears after the next Claude Code interaction.
 
-## Configuration
+### Configuration
 
-Edit the scripts **in your clone**, then re-run `./install.sh` to redeploy — `~/.claude/worknote/` is a generated copy and is overwritten on install.
+Edit the scripts in your clone, then rerun `./install.sh`; the directory under `~/.claude/` is a generated copy.
 
-- **Redraw cadence** — `statusLine.refreshInterval` in `~/.claude/settings.json` (seconds; cosmetic only — it does not trigger Haiku calls). Default `10`.
+- **Redraw cadence** — `statusLine.refreshInterval` in `~/.claude/settings.json`. The default is 10 seconds and affects rendering only, not model calls.
 - **Model** — change `--model haiku` in `generate.sh`.
-- **Context tiers** — `TIERS` in `generate.sh` controls how much transcript the summarizer may request (default `14 → 40 → 120` messages). It escalates only when the model reports the window is insufficient, so wider tiers cost nothing on the common path.
-- **Goal-line stability** — the `🎯` line is held steady by feeding the model its current value and replacing it only when the model judges the focus has shifted to a different feature or objective. Loosen or tighten that by editing the `CHANGED:` instruction in `generate.sh`.
-- **Layout / segments** — edit `statusline.sh` (e.g. drop a segment, change an emoji, or change how the detail line wraps).
+- **Context tiers** — edit `TIERS` in `generate.sh` to change the 14 → 40 → 120 message escalation.
+- **Goal stability** — edit the `CHANGED:` instruction in `generate.sh`.
+- **Layout** — edit `statusline.sh` to change metadata, wrapping, or emoji.
 
-## Uninstall
+### Uninstall
 
 ```sh
 ./uninstall.sh
 ```
 
-Removes `~/.claude/worknote/` and the `statusLine` entry (only if it still points at worknote). The rest of your settings are left untouched.
+This removes Worknote and its `statusLine` entry without replacing the rest of your Claude settings.
 
-## Notes
+## Codex + tmux
 
-- **Why an install script rather than a Claude Code plugin?** Plugins can ship hooks, commands, agents, and MCP servers — but **not a `statusLine`**, which is what this tool fundamentally is. Since the status line both displays the note and drives its refresh, a small install script is the natural, fully-working fit.
-- **Cost** — one short Haiku call per *new message*; nothing while idle. Typical summaries are a few thousand input tokens and a handful of output tokens.
+Codex's native status line exposes built-in fields but does not run arbitrary render commands. The Worknote plugin therefore uses [lifecycle hooks](https://learn.chatgpt.com/docs/hooks) for updates and tmux's multi-line status area for display.
+
+### How it works
+
+1. `SessionStart` adds two tmux rows while preserving the session's existing status configuration.
+2. `UserPromptSubmit` remembers the current prompt. `Stop` combines it with Codex's final assistant message and starts a detached summarizer.
+3. A small, tool-disabled `codex exec` call returns schema-checked JSON. Worknote keeps the big-picture goal unless the model marks it changed, saves the two lines per Codex session, and updates the originating tmux pane.
+4. `SessionEnd` removes Worknote from that pane. When the last Worknote pane exits, the original tmux rows and height are restored.
+
+The plugin deliberately uses documented hook fields instead of parsing Codex's unstable transcript format. Multiple Codex panes can run independently in one tmux session; the active pane's note is displayed. No summary call is made while idle or when Codex is running outside tmux.
+
+### Requirements
+
+- A recent Codex CLI with plugins and hooks (tested with `codex-cli 0.146.0`) and an active Codex login.
+- tmux with multi-line status support. Worknote can append its rows when the existing status uses zero to three rows; tmux supports at most five.
+- `jq` and Bash 3.2 or newer.
+
+### Install
+
+From this checkout:
+
+```sh
+codex plugin marketplace add .
+codex plugin add worknote@personal
+tmux new -s codex
+codex
+```
+
+Or, after the repository is published, add it directly from GitHub:
+
+```sh
+codex plugin marketplace add xu-hao/worknote
+codex plugin add worknote@personal
+```
+
+Start a new Codex session inside tmux after installation. Review and trust the Worknote commands in `/hooks` if Codex prompts you. No `.tmux.conf` changes are required.
+
+### Configuration
+
+Set these in the environment before starting Codex:
+
+```sh
+export WORKNOTE_CODEX_MODEL=gpt-5.6-luna
+export WORKNOTE_REASONING_EFFORT=none
+# export WORKNOTE_DEBUG=1
+```
+
+The defaults shown above favor a fast, inexpensive summary. Worknote makes one short call after each completed Codex turn inside tmux; it makes no calls while idle or outside tmux. The current user prompt and final assistant message are sent to that summarizer and notes are stored in the plugin's data directory.
+
+If Codex is killed before `SessionEnd` can restore tmux, start and exit another Codex session normally or reset the rows from this checkout:
+
+```sh
+bash plugins/worknote/scripts/tmux-status.sh reset "$TMUX_PANE"
+```
+
+### Uninstall
+
+```sh
+codex plugin remove worknote@personal
+codex plugin marketplace remove personal
+```
+
+The marketplace removal is optional if you want to keep the repository registered with Codex.
 
 ## License
 

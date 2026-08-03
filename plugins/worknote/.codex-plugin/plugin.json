@@ -1,0 +1,23 @@
+{
+  "name": "worknote",
+  "version": "0.1.0",
+  "description": "Live, per-session Codex work summaries in tmux.",
+  "author": {
+    "name": "xu-hao",
+    "email": "1790317+xu-hao@users.noreply.github.com",
+    "url": "https://github.com/xu-hao"
+  },
+  "homepage": "https://github.com/xu-hao/worknote",
+  "repository": "https://github.com/xu-hao/worknote",
+  "license": "MIT",
+  "keywords": ["codex", "tmux", "status-line", "productivity"],
+  "interface": {
+    "displayName": "Worknote",
+    "shortDescription": "Live Codex work summaries in tmux.",
+    "longDescription": "Keep a stable goal and the current step visible below Codex without polling or delaying turns.",
+    "developerName": "xu-hao",
+    "category": "Productivity",
+    "capabilities": ["Hooks"],
+    "defaultPrompt": "Explain how Worknote tracks this Codex session."
+  }
+}

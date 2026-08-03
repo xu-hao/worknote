@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "changed": {
+      "type": "boolean",
+      "description": "Whether the overarching goal changed."
+    },
+    "big": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "The overarching goal in at most eight words."
+    },
+    "now": {
+      "type": "string",
+      "maxLength": 220,
+      "description": "The specific current step in one short sentence."
+    }
+  },
+  "required": ["changed", "big", "now"],
+  "additionalProperties": false
+}
