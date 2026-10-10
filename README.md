@@ -57,7 +57,7 @@ cd worknote
 Edit the scripts in your clone, then rerun `./install.sh`; the directory under `~/.claude/` is a generated copy.
 
 - **Redraw cadence** — `statusLine.refreshInterval` in `~/.claude/settings.json`. The default is 10 seconds and affects rendering only, not model calls.
-- **Model** — change `--model haiku` in `generate.sh`.
+- **Model** — defaults to Haiku 5.5; change `--model claude-haiku-5-5` in `generate.sh`.
 - **Context tiers** — edit `TIERS` in `generate.sh` to change the 14 → 40 → 120 message escalation.
 - **Goal stability** — edit the `CHANGED:` instruction in `generate.sh`.
 - **Layout** — edit `statusline.sh` to change metadata, wrapping, or emoji.

@@ -71,7 +71,7 @@ $1"
 
 run_haiku() { # $1=prompt
   WORKNOTE_GEN=1 claude -p "$1" \
-    --model haiku \
+    --model claude-haiku-5-5 \
     --settings '{"disableAllHooks":true}' \
     --tools "" \
     --no-session-persistence 2>/dev/null | tr -d '\r'
